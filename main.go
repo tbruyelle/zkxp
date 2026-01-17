@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/consensys/gnark/frontend"
@@ -25,16 +26,34 @@ func prove(circuit, assignment, publicAssignement frontend.Circuit, verifiedLabe
 }
 
 func main() {
-	prove(
-		&MulCircuit{},
-		&MulCircuit{
-			A: 3,  // Secret
-			B: 5,  // Secret
-			C: 15, // Public
-		},
-		&MulCircuit{
-			C: 15,
-		},
-		"the prover knows the factors of 15",
-	)
+	flag.Parse()
+	switch flag.Arg(0) {
+
+	case "age":
+		prove(
+			&AgeCircuit{},
+			&AgeCircuit{
+				Age:   24,
+				Limit: 18,
+			},
+			&AgeCircuit{
+				Limit: 18,
+			},
+			"the prover knows that age is greater or equal to 18",
+		)
+
+	case "mul":
+		prove(
+			&MulCircuit{},
+			&MulCircuit{
+				A: 3,  // Secret
+				B: 5,  // Secret
+				C: 15, // Public
+			},
+			&MulCircuit{
+				C: 15,
+			},
+			"the prover knows the factors of 15",
+		)
+	}
 }
