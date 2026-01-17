@@ -2,28 +2,39 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/consensys/gnark/frontend"
 )
 
-func main() {
-	zkp, err := newZkp(&MulCircuit{})
+func prove(circuit, assignment, publicAssignement frontend.Circuit, verifiedLabel string) {
+	zkp, err := newZkp(circuit)
 	if err != nil {
 		panic(err)
 	}
 	// -- prover
 	//  Create the proof with real values
-	proof := zkp.Proof(&MulCircuit{
-		A: 3,  // Secret
-		B: 5,  // Secret
-		C: 15, // Public
-	})
+	proof := zkp.Proof(assignment)
 
 	// -- verifier
 	// pass the public witness (only public field)
-	err = zkp.Verify(proof, &MulCircuit{
-		C: 15,
-	})
+	err = zkp.Verify(proof, publicAssignement)
 	if err != nil {
 		panic(fmt.Errorf("Invalid proof: %w", err))
 	}
-	fmt.Println("Accepted proof : the prover knows the factors of 15")
+	fmt.Printf("Accepted proof : %s\n", verifiedLabel)
+}
+
+func main() {
+	prove(
+		&MulCircuit{},
+		&MulCircuit{
+			A: 3,  // Secret
+			B: 5,  // Secret
+			C: 15, // Public
+		},
+		&MulCircuit{
+			C: 15,
+		},
+		"the prover knows the factors of 15",
+	)
 }
