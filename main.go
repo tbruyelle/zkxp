@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/big"
 
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark-crypto/hash"
 	"github.com/consensys/gnark/frontend"
 )
 
@@ -28,6 +31,50 @@ func prove(circuit, assignment, publicAssignement frontend.Circuit, verifiedLabe
 func main() {
 	flag.Parse()
 	switch flag.Arg(0) {
+
+	case "membership":
+		// Voici la méthode propre pour obtenir un hash compatible avec le circuit :
+		f := ecc.BN254.ScalarField()
+		mimcHash := func(val int) []byte {
+			h := hash.MIMC_BN254.New()
+
+			// On convertit l'int en big.Int, puis on récupère ses bytes au format "Big Endian"
+			// car c'est ce que le circuit attend pour un élément de Field
+			var b big.Int
+			b.SetInt64(int64(val))
+
+			// On s'assure que le nombre est bien dans le Field
+			res := b.Mod(&b, f)
+
+			h.Write(res.Bytes())
+			return h.Sum(nil)
+		}
+		hSecret := mimcHash(42)
+		hOther1 := mimcHash(6789)
+		hOther2 := mimcHash(9999)
+		hOther3 := mimcHash(1111)
+
+		prove(
+			&MemberShipCircuit{},
+			&MemberShipCircuit{
+				SecretCode: 42,
+				PublicHashes: [4]frontend.Variable{
+					hSecret,
+					hOther1,
+					hOther2,
+					hOther3,
+				},
+			},
+			&MemberShipCircuit{
+				PublicHashes: [4]frontend.Variable{
+					hSecret,
+					hOther1,
+					hOther2,
+					hOther3,
+				},
+			},
+			"the provier knows the code of one of the hashes",
+		)
 
 	case "age":
 		prove(
